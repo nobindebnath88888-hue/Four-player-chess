@@ -3,42 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analytical Chess - 4 Player Teams</title>
+    <title>4‑Player Team Chess · Analytical Platform</title>
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
-    <style>
-        /* CSS GOES HERE */
-        :root { --bg: #0d1117; --text: #e6edf3; --box: #161b22; --accent: #388bfd; --border: #30363d; --team-accent: #238636; }
-        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
-        .container { max-width: 1100px; margin: auto; text-align: center; }
-        #setup-section { background: var(--box); border: 1px solid var(--border); padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        #board { border: 5px solid #21262d; border-radius: 4px; margin: auto; }
-        .game-layout { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
-        .sidebar-container { width: 350px; display: flex; flex-direction: column; gap: 15px; }
-        .chat-section { background: var(--box); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; height: 280px; }
-        .team-chat-box { border: 2px solid var(--team-accent); }
-        #chat-messages, #team-messages { flex-grow: 1; overflow-y: auto; padding: 10px; text-align: left; font-size: 14px; }
-        .chat-input-area { display: flex; border-top: 1px solid var(--border); }
-        input { flex-grow: 1; padding: 10px; background: transparent; color: white; border: none; outline: none; }
-        button { padding: 8px 12px; cursor: pointer; background: var(--accent); color: white; border: none; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="game-over-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="winner-text">Game Over</h2>
+            <p id="reason-text"></p>
+            <button onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
     <div class="container">
-        <h2>Strategy Hub: 4-Player Teams</h2>
+        <h2>4‑Player Team Chess · Strategy Hub</h2>
+        <div class="controls">
+            <button id="theme-toggle" onclick="toggleTheme()">🌙 Theme</button>
+            <button id="highlight-toggle" onclick="toggleHighlight()">🎯 King Highlight</button>
+            <button id="flip-toggle" onclick="flipBoard()">🔄 Flip</button>
+            <button id="draw-btn" onclick="offerDraw()">🤝 Draw</button>
+            <button id="resign-btn" onclick="resignGame()">🏳️ Resign</button>
+        </div>
+
+        <div id="draw-offer-area" style="display:none; background: #fff3cd; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ffeeba;">
+            <span id="draw-offer-msg">Opponent offers a draw.</span>
+            <button onclick="handleDraw(true)" style="background: #28a745; color: white; border: none; padding: 5px 10px; cursor:pointer;">Accept</button>
+            <button onclick="handleDraw(false)" style="background: #dc3545; color: white; border: none; padding: 5px 10px; cursor:pointer;">Decline</button>
+        </div>
+
         <div id="setup-section">
             <input type="text" id="roomInput" placeholder="Enter Room ID">
-            <button onclick="joinRoom('w')">White</button>
-            <button onclick="joinRoom('g')">Gold</button>
-            <button onclick="joinRoom('b')">Black</button>
-            <button onclick="joinRoom('s')">Silver</button>
+            <button onclick="joinRoom('w')">Join as White (Team A)</button>
+            <button onclick="joinRoom('b')">Join as Black (Team B)</button>
         </div>
+
         <div class="game-layout">
-            <div id="board" style="width: 450px;"></div>
+            <div class="board-container">
+                <div id="board" style="width: 400px;"></div>
+                <div class="nav-controls">
+                    <button onclick="prevMove()"> < </button>
+                    <button onclick="nextMove()"> > </button>
+                </div>
+            </div>
+            
             <div class="sidebar-container">
-                <div class="chat-section"><h3>Public</h3><div id="chat-messages"></div><div class="chat-input-area"><input id="chatInput"><button onclick="sendMessage('global')">Send</button></div></div>
-                <div class="chat-section team-chat-box"><h3>Team</h3><div id="team-messages"></div><div class="chat-input-area"><input id="teamInput"><button onclick="sendMessage('team')">Send</button></div></div>
+                <div class="history-section">
+                    <h3>Move History</h3>
+                    <div id="move-list"></div>
+                </div>
+
+                <div class="chat-section">
+                    <h3>Game Chat</h3>
+                    <div id="chat-messages"></div>
+                    <!-- Public chat -->
+                    <div class="chat-input-area">
+                        <input type="text" id="chatInput" placeholder="Public message...">
+                        <button onclick="sendMessage()">Send</button>
+                    </div>
+                    <!-- Team chat (private) -->
+                    <div class="chat-input-area" style="margin-top: 5px; border-top: 1px dashed var(--accent);">
+                        <input type="text" id="teamChatInput" placeholder="Team message (private)...">
+                        <button onclick="sendTeamMessage()">🔒 Team</button>
+                    </div>
+                </div>
             </div>
         </div>
+        <p id="status">Waiting for players...</p>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -46,9 +77,6 @@
     <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
-    <script>
-        // PASTE YOUR SCRIPT.JS CODE HERE 
-        // (Make sure to update your firebaseConfig!)
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
