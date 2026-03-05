@@ -8,7 +8,6 @@
     --check-color: #f85149; 
     --light-square: #606f84; 
     --dark-square: #2e3541; 
-    --last-move: rgba(56, 139, 253, 0.4);
     --team-accent: #238636;
 }
 
@@ -22,10 +21,13 @@ body.dark-mode {
 body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; transition: 0.3s; margin: 0; padding: 20px; }
 .container { max-width: 1100px; margin: auto; text-align: center; }
 
+#setup-section { background: var(--box); border: 1px solid var(--border); padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+#setup-section input { padding: 10px; border-radius: 5px; border: 1px solid var(--border); background: #0d1117; color: white; width: 250px; }
+
 .controls { margin-bottom: 15px; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
 button { padding: 8px 12px; cursor: pointer; border-radius: 5px; border: 1px solid var(--border); background: var(--box); color: var(--text); font-size: 13px; }
 
-#board { border: 5px solid #21262d; border-radius: 4px; overflow: hidden; }
+#board { border: 5px solid #21262d; border-radius: 4px; overflow: hidden; margin: auto; }
 .white-1e1d7 { background-color: var(--light-square) !important; }
 .black-3c85d { background-color: var(--dark-square) !important; }
 
