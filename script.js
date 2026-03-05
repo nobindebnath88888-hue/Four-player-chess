@@ -8,12 +8,21 @@
     measurementId: "G-S1C4GPJFXT"
   };
 
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    databaseURL: "YOUR_DATABASE_URL",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
 
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
 // ============================================
-// CUSTOM MULTI-KING CHESS ENGINE (FULL)
+// 4-PLAYER TEAM CHESS ENGINE (COMPLETE)
 // ============================================
 class MultiKingChess {
     constructor() {
@@ -22,7 +31,7 @@ class MultiKingChess {
         this.currentTurn = 'white'; // white, black, gold, silver
         this.moveHistory = [];
         this.gameOver = false;
-        this.winner = null;
+        this.winner = null; // 'A' or 'B'
         this.eliminated = { white: false, gold: false, black: false, silver: false };
     }
 
@@ -110,7 +119,7 @@ class MultiKingChess {
         return kings;
     }
 
-    // ---------- Check if a square is attacked by opponent (ignoring abandoned pieces) ----------
+    // ---------- Check if a square is attacked by opponent (ignoring dead pieces) ----------
     isSquareAttacked(sq, attackingColor) {
         const { row, col } = this.squareToIndices(sq);
         for (let r = 0; r < 8; r++) {
@@ -118,7 +127,7 @@ class MultiKingChess {
                 const piece = this.board[r][c];
                 if (!piece || piece.color !== attackingColor) continue;
                 const owner = this.ownership[this.indicesToSquare(r, c)];
-                if (owner && this.eliminated[owner]) continue; // abandoned piece doesn't attack
+                if (owner && this.eliminated[owner]) continue; // dead piece doesn't attack
                 const from = this.indicesToSquare(r, c);
                 const moves = this.getPseudoMoves(from);
                 if (moves.includes(sq)) return true;
@@ -127,7 +136,7 @@ class MultiKingChess {
         return false;
     }
 
-    // ---------- Pseudo-legal moves (no check validation) ----------
+    // ---------- Pseudo-legal moves (no check validation, no dead piece check) ----------
     getPseudoMoves(sq) {
         const piece = this.getPiece(sq);
         if (!piece) return [];
@@ -248,14 +257,15 @@ class MultiKingChess {
 
     // ---------- Check if a specific player is in check ----------
     isPlayerInCheck(playerId) {
+        if (this.eliminated[playerId]) return false;
         const color = (playerId === 'white' || playerId === 'gold') ? 'w' : 'b';
         const kings = this.findKings(color);
         for (const kingSq of kings) {
             if (this.ownership[kingSq] === playerId) {
-                return this.isSquareAttacked(kingSq, color === 'w' ? 'b' : 'w');
+                if (this.isSquareAttacked(kingSq, color === 'w' ? 'b' : 'w')) return true;
             }
         }
-        return false; // no king (shouldn't happen)
+        return false;
     }
 
     // ---------- Get all legal moves for a player (considering check) ----------
@@ -278,30 +288,47 @@ class MultiKingChess {
         return moves;
     }
 
-    // ---------- Check if a specific move is legal (doesn't leave own king in check) ----------
+    // ---------- Check if a specific move is legal (doesn't leave any of player's kings in check) ----------
     isMoveLegal(playerId, move) {
         const { from, to } = move;
-        // Make temporary copy
+        const piece = this.getPiece(from);
+        if (!piece) return false;
+        const targetPiece = this.getPiece(to);
+        const targetOwner = this.ownership[to];
+
+        // Make copies
         const boardCopy = JSON.parse(JSON.stringify(this.board));
         const ownershipCopy = { ...this.ownership };
         const { row: fromR, col: fromC } = this.squareToIndices(from);
         const { row: toR, col: toC } = this.squareToIndices(to);
-        const piece = boardCopy[fromR][fromC];
-        if (!piece) return false;
 
-        // Apply move
         boardCopy[toR][toC] = piece;
         boardCopy[fromR][fromC] = null;
         ownershipCopy[to] = playerId;
         ownershipCopy[from] = null;
 
-        // Create temporary game to check check
+        // Create temporary game
         const temp = new MultiKingChess();
         temp.board = boardCopy;
         temp.ownership = ownershipCopy;
         temp.eliminated = { ...this.eliminated };
 
-        return !temp.isPlayerInCheck(playerId);
+        // If move captures a king, mark that player as eliminated for check calculation
+        if (targetPiece && targetPiece.type === 'k' && targetOwner) {
+            temp.eliminated[targetOwner] = true;
+        }
+
+        // Check if any of playerId's kings are in check after move
+        const playerColor = (playerId === 'white' || playerId === 'gold') ? 'w' : 'b';
+        const playerKings = temp.findKings(playerColor);
+        for (const kingSq of playerKings) {
+            if (temp.ownership[kingSq] === playerId) {
+                if (temp.isSquareAttacked(kingSq, playerColor === 'w' ? 'b' : 'w')) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     // ---------- Execute a move (return true if successful) ----------
@@ -318,12 +345,11 @@ class MultiKingChess {
         if (!legal.some(m => m.from === from && m.to === to)) return false;
 
         const targetPiece = this.getPiece(to);
-        // If capture a king, eliminate that player
-        if (targetPiece && targetPiece.type === 'k') {
-            const targetPlayer = this.ownership[to];
-            if (targetPlayer) {
-                this.eliminated[targetPlayer] = true;
-            }
+        const targetOwner = this.ownership[to];
+
+        // If capture a king, eliminate that player immediately
+        if (targetPiece && targetPiece.type === 'k' && targetOwner) {
+            this.eliminated[targetOwner] = true;
         }
 
         // Apply move
@@ -332,7 +358,7 @@ class MultiKingChess {
         this.ownership[to] = playerId;
         this.ownership[from] = null;
 
-        // Pawn promotion (always queen)
+        // Pawn promotion (auto-queen for now; you can add a modal later)
         const piece = this.getPiece(to);
         if (piece.type === 'p') {
             const { row } = this.squareToIndices(to);
@@ -341,7 +367,7 @@ class MultiKingChess {
             }
         }
 
-        // Record history
+        // Record move in history
         this.moveHistory.push({
             from, to,
             player: playerId,
@@ -368,6 +394,7 @@ class MultiKingChess {
         return true;
     }
 
+    // Advance to next player who is not eliminated
     advanceTurn() {
         const order = ['white', 'black', 'gold', 'silver'];
         let idx = order.indexOf(this.currentTurn);
@@ -375,6 +402,29 @@ class MultiKingChess {
             idx = (idx + 1) % 4;
         } while (this.eliminated[order[idx]] && !this.gameOver);
         this.currentTurn = order[idx];
+
+        // After advancing, if the new current player is in checkmate, eliminate them immediately
+        if (!this.gameOver && !this.eliminated[this.currentTurn]) {
+            if (this.isPlayerInCheck(this.currentTurn) && this.getLegalMovesForPlayer(this.currentTurn).length === 0) {
+                // Checkmate! Eliminate this player
+                this.eliminated[this.currentTurn] = true;
+                // Re-check game over
+                const teamA = ['white', 'gold'];
+                const teamB = ['black', 'silver'];
+                const teamADead = teamA.every(p => this.eliminated[p]);
+                const teamBDead = teamB.every(p => this.eliminated[p]);
+                if (teamADead) {
+                    this.gameOver = true;
+                    this.winner = 'B';
+                } else if (teamBDead) {
+                    this.gameOver = true;
+                    this.winner = 'A';
+                } else {
+                    // If game not over, advance turn again (skip eliminated player)
+                    this.advanceTurn();
+                }
+            }
+        }
     }
 
     // ---------- Load state from Firebase ----------
