@@ -5,64 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytical Chess - 4 Player Teams</title>
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* CSS GOES HERE */
+        :root { --bg: #0d1117; --text: #e6edf3; --box: #161b22; --accent: #388bfd; --border: #30363d; --team-accent: #238636; }
+        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: auto; text-align: center; }
+        #setup-section { background: var(--box); border: 1px solid var(--border); padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        #board { border: 5px solid #21262d; border-radius: 4px; margin: auto; }
+        .game-layout { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
+        .sidebar-container { width: 350px; display: flex; flex-direction: column; gap: 15px; }
+        .chat-section { background: var(--box); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; height: 280px; }
+        .team-chat-box { border: 2px solid var(--team-accent); }
+        #chat-messages, #team-messages { flex-grow: 1; overflow-y: auto; padding: 10px; text-align: left; font-size: 14px; }
+        .chat-input-area { display: flex; border-top: 1px solid var(--border); }
+        input { flex-grow: 1; padding: 10px; background: transparent; color: white; border: none; outline: none; }
+        button { padding: 8px 12px; cursor: pointer; background: var(--accent); color: white; border: none; }
+    </style>
 </head>
 <body>
-    <div id="game-over-modal" class="modal">
-        <div class="modal-content">
-            <h2 id="winner-text">Game Over</h2>
-            <p id="reason-text"></p>
-            <button onclick="closeModal()">Close</button>
-        </div>
-    </div>
-
     <div class="container">
         <h2>Strategy Hub: 4-Player Teams</h2>
-        
         <div id="setup-section">
-            <input type="text" id="roomInput" placeholder="Enter Room ID (e.g. 123)">
-            <div style="margin-top:15px; display: flex; justify-content: center; gap: 20px;">
-                <div>
-                    <p><strong>Team A</strong></p>
-                    <button onclick="joinRoom('w')">Join White</button>
-                    <button onclick="joinRoom('g')">Join Gold</button>
-                </div>
-                <div>
-                    <p><strong>Team B</strong></p>
-                    <button onclick="joinRoom('b')">Join Black</button>
-                    <button onclick="joinRoom('s')">Join Silver</button>
-                </div>
-            </div>
+            <input type="text" id="roomInput" placeholder="Enter Room ID">
+            <button onclick="joinRoom('w')">White</button>
+            <button onclick="joinRoom('g')">Gold</button>
+            <button onclick="joinRoom('b')">Black</button>
+            <button onclick="joinRoom('s')">Silver</button>
         </div>
-
         <div class="game-layout">
-            <div class="board-container">
-                <div id="board" style="width: 450px;"></div>
-                <div class="controls" style="margin-top:15px;">
-                    <button id="theme-toggle" onclick="toggleTheme()">🌙 Theme</button>
-                    <button id="flip-toggle" onclick="flipBoard()">🔄 Flip</button>
-                </div>
-                <p id="status">Please enter a Room ID and pick a side.</p>
-            </div>
-            
+            <div id="board" style="width: 450px;"></div>
             <div class="sidebar-container">
-                <div class="chat-section">
-                    <h3 style="padding: 10px 0 0 10px; margin: 0;">Public Chat</h3>
-                    <div id="chat-messages"></div>
-                    <div class="chat-input-area">
-                        <input type="text" id="chatInput" placeholder="Message everyone...">
-                        <button onclick="sendMessage('global')">Send</button>
-                    </div>
-                </div>
-
-                <div class="chat-section team-chat-box">
-                    <h3 style="padding: 10px 0 0 10px; margin: 0;">Team Strategy (Private)</h3>
-                    <div id="team-messages"></div>
-                    <div class="chat-input-area">
-                        <input type="text" id="teamInput" placeholder="Message partner...">
-                        <button onclick="sendMessage('team')">Discuss</button>
-                    </div>
-                </div>
+                <div class="chat-section"><h3>Public</h3><div id="chat-messages"></div><div class="chat-input-area"><input id="chatInput"><button onclick="sendMessage('global')">Send</button></div></div>
+                <div class="chat-section team-chat-box"><h3>Team</h3><div id="team-messages"></div><div class="chat-input-area"><input id="teamInput"><button onclick="sendMessage('team')">Send</button></div></div>
             </div>
         </div>
     </div>
@@ -72,6 +46,9 @@
     <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
-    <script src="script.js"></script>
+    <script>
+        // PASTE YOUR SCRIPT.JS CODE HERE 
+        // (Make sure to update your firebaseConfig!)
+    </script>
 </body>
 </html>
