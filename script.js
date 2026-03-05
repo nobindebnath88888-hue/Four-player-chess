@@ -8,6 +8,7 @@
     measurementId: "G-S1C4GPJFXT"
   };
 
+
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
@@ -18,13 +19,18 @@ var myTeam = null;
 var roomID = null;
 var turnOrder = ['w', 'b', 'g', 's']; 
 var currentTurnIndex = 0;
-var isGameOver = false;
 
+// Mirrored Analytical Layout
 const customStartPos = "krrp2prr/qpn2npq/pnb2bnp/8/8/PNB2BNP/QPN2NPQ/KRRP2PRR w - - 0 1";
 
+// 2. GAME LOGIC
 function onDragStart (source, piece, position, orientation) {
-    if (isGameOver) return false;
+    if (game.game_over()) return false;
+    
+    // Check if it's the player's actual turn
     if (myColor !== turnOrder[currentTurnIndex]) return false;
+
+    // Team piece check (White/Gold are Team A, Black/Silver are Team B)
     if (myTeam === 'A' && piece.search(/^b/) !== -1) return false;
     if (myTeam === 'B' && piece.search(/^w/) !== -1) return false;
 }
@@ -32,6 +38,7 @@ function onDragStart (source, piece, position, orientation) {
 function onDrop (source, target) {
     const targetPiece = game.get(target);
     if (targetPiece) {
+        // Prevent teammate capture
         const targetIsWhiteSide = targetPiece.color === 'w';
         if (myTeam === 'A' && targetIsWhiteSide) return 'snapback';
         if (myTeam === 'B' && !targetIsWhiteSide) return 'snapback';
@@ -40,8 +47,10 @@ function onDrop (source, target) {
     var move = game.move({ from: source, to: target, promotion: 'q' });
     if (move === null) return 'snapback';
 
+    // Move turn index forward
     currentTurnIndex = (currentTurnIndex + 1) % 4;
 
+    // Push to Firebase
     database.ref('rooms/' + roomID + '/game').set({
         fen: game.fen(),
         turnIndex: currentTurnIndex
@@ -50,39 +59,50 @@ function onDrop (source, target) {
 
 function onSnapEnd () { board.position(game.fen()); }
 
+// 3. ROOM & COMMUNICATION
 function joinRoom(color) {
     roomID = document.getElementById('roomInput').value;
-    if (!roomID) return alert("Enter Room ID");
+    if (!roomID) return alert("Enter Room ID first!");
+
     myColor = color;
     myTeam = (color === 'w' || color === 'g') ? 'A' : 'B';
     document.getElementById('setup-section').style.display = 'none';
     if(myTeam === 'B') board.flip();
 
+    // Database Connection
     database.ref('rooms/' + roomID + '/game').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
             game.load(data.fen);
             currentTurnIndex = data.turnIndex;
             board.position(data.fen);
-            document.getElementById('status').innerText = `Current Turn: ${getPlayerName(turnOrder[currentTurnIndex])}`;
+            document.getElementById('status').innerText = `Turn: ${getPlayerName(turnOrder[currentTurnIndex])}`;
         } else {
+            // First person initializes
             database.ref('rooms/' + roomID + '/game').set({ fen: customStartPos, turnIndex: 0 });
         }
     });
 
+    // Public Chat
     database.ref('rooms/' + roomID + '/chat/global').on('child_added', (snapshot) => {
-        displayMessage('chat-messages', snapshot.val().user, snapshot.val().text);
+        const msg = snapshot.val();
+        displayMessage('chat-messages', msg.user, msg.text);
     });
 
+    // Private Team Chat
     database.ref('rooms/' + roomID + '/chat/team_' + myTeam).on('child_added', (snapshot) => {
-        displayMessage('team-messages', "Partner", snapshot.val().text);
+        const msg = snapshot.val();
+        displayMessage('team-messages', "Partner", msg.text);
     });
 }
 
 function sendMessage(type) {
-    const input = document.getElementById(type === 'global' ? 'chatInput' : 'teamInput');
-    if (!input.value.trim() || !roomID) return;
+    const inputId = type === 'global' ? 'chatInput' : 'teamInput';
+    const input = document.getElementById(inputId);
     const path = type === 'global' ? 'global' : 'team_' + myTeam;
+    
+    if (!input.value.trim() || !roomID) return;
+
     database.ref('rooms/' + roomID + '/chat/' + path).push({
         user: getPlayerName(myColor),
         text: input.value
@@ -105,6 +125,7 @@ function displayMessage(containerId, user, text) {
 function toggleTheme() { document.body.classList.toggle('dark-mode'); }
 function flipBoard() { board.flip(); }
 
+// 4. INIT BOARD
 var config = {
     draggable: true,
     position: customStartPos,
