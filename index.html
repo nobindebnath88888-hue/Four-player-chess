@@ -20,17 +20,17 @@
         <h2>Strategy Hub: 4-Player Teams</h2>
         
         <div id="setup-section">
-            <input type="text" id="roomInput" placeholder="Enter Room ID">
+            <input type="text" id="roomInput" placeholder="Enter Room ID (e.g. 123)">
             <div style="margin-top:15px; display: flex; justify-content: center; gap: 20px;">
                 <div>
                     <p><strong>Team A</strong></p>
-                    <button onclick="joinRoom('w')">White</button>
-                    <button onclick="joinRoom('g')">Gold</button>
+                    <button onclick="joinRoom('w')">Join White</button>
+                    <button onclick="joinRoom('g')">Join Gold</button>
                 </div>
                 <div>
                     <p><strong>Team B</strong></p>
-                    <button onclick="joinRoom('b')">Black</button>
-                    <button onclick="joinRoom('s')">Silver</button>
+                    <button onclick="joinRoom('b')">Join Black</button>
+                    <button onclick="joinRoom('s')">Join Silver</button>
                 </div>
             </div>
         </div>
@@ -41,9 +41,8 @@
                 <div class="controls" style="margin-top:15px;">
                     <button id="theme-toggle" onclick="toggleTheme()">🌙 Theme</button>
                     <button id="flip-toggle" onclick="flipBoard()">🔄 Flip</button>
-                    <button id="resign-btn" onclick="resignGame()">🏳️ Resign</button>
                 </div>
-                <p id="status">Waiting for players to join...</p>
+                <p id="status">Please enter a Room ID and pick a side.</p>
             </div>
             
             <div class="sidebar-container">
